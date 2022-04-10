@@ -2,6 +2,8 @@
 
 mod paste_id;
 
+use std::env;
+
 use paste_id::PasteId;
 
 use rocket::Config;
@@ -129,14 +131,20 @@ async fn upload(_auth: Authenticated, paste: Data<'_>, site_url: SiteURL) -> std
 
 #[launch]
 fn rocket() -> _ {
+    let username = match env::var("LITEBIN_USERNAME") {
+        Ok(v) => v,
+        Err(_e) => "hello".to_string()
+    };
+
+    let password = match env::var("LITEBIN_PASSWORD") {
+        Ok(v) => v,
+        Err(_e) => "world".to_string()
+    };
+
     let rocket = rocket::build()
         .mount("/", routes![hello, index, upload, retrieve])
         .register("/", catchers![unauthorized_catcher,])
-        .manage(BasicAuth {username: "test".to_string(), password: "test".to_string()});
-    let figment = rocket.figment();
-
-    let config: Config = figment.extract().expect("config");
-    println!("{}", config.address);
+        .manage(BasicAuth {username: username, password: password});
 
     rocket
 }
