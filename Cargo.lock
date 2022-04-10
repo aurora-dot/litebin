@@ -76,6 +76,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4521f3e3d031370679b3b140beb36dfe4801b09ac77e30c61941f97df3ef28b"
 
 [[package]]
+name = "base64"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
 name = "binascii"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -160,6 +166,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "dict"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39fbb71fba1e2c935f51b056de0d812d9b625b8165b2d7f8848902080fbdffb4"
 
 [[package]]
 name = "discard"
@@ -470,7 +482,10 @@ checksum = "ec647867e2bf0772e28c8bcde4f0d19a9216916e890543b5a03ed8ef27b8f259"
 name = "litebin"
 version = "0.1.0"
 dependencies = [
+ "dict",
+ "rand",
  "rocket",
+ "rocket-basicauth",
 ]
 
 [[package]]
@@ -833,6 +848,17 @@ dependencies = [
  "ubyte",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "rocket-basicauth"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79128c0f55b7bc6785c13816d71af4baee156bd615b09468800edaaa7da56a08"
+dependencies = [
+ "base64",
+ "log",
+ "rocket",
 ]
 
 [[package]]
