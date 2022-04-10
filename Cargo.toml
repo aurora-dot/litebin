@@ -1,5 +1,10 @@
 [package]
 name = "litebin"
+description = " Tiny pastebin written in Rust"
+rust-version = "1.62.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/aurora-dot/litebin"
+readme = "README.md"
 version = "0.1.0"
 edition = "2021"
 
