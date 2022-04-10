@@ -6,7 +6,6 @@ use std::env;
 
 use paste_id::PasteId;
 
-use rocket::Config;
 use rocket::response::{Responder, Response};
 use rocket::http::{self, Header, ContentType};
 use rocket::request::{self, Request, FromRequest, Outcome};
