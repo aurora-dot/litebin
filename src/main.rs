@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
+#[cfg(test)]
+mod tests;
+
 mod paste_id;
 
 use std::env;
