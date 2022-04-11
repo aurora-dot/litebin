@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
+use rand::{self, Rng};
 use rocket::http::uri::fmt;
 use rocket::request::FromParam;
-use rand::{self, Rng};
 
 /// Table to retrieve base62 values from.
 const BASE62: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -43,7 +43,9 @@ impl<'a> FromParam<'a> for PasteId<'a> {
     type Error = &'a str;
 
     fn from_param(param: &'a str) -> Result<Self, Self::Error> {
-        param.chars().all(|c| c.is_ascii_alphanumeric())
+        param
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric())
             .then(|| PasteId(param.into()))
             .ok_or(param)
     }
