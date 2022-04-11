@@ -1,4 +1,5 @@
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
 mod paste_id;
 
@@ -6,13 +7,13 @@ use std::env;
 
 use paste_id::PasteId;
 
-use rocket::response::{Responder, Response};
-use rocket::http::{self, Header, ContentType};
-use rocket::request::{self, Request, FromRequest, Outcome};
-use rocket::response::content;
-use rocket_basicauth::BasicAuth;
 use rocket::data::{Data, ToByteUnit};
+use rocket::http::{self, ContentType, Header};
+use rocket::request::{self, FromRequest, Outcome, Request};
+use rocket::response::content;
+use rocket::response::{Responder, Response};
 use rocket::tokio::fs::File;
+use rocket_basicauth::BasicAuth;
 
 struct Authenticated {}
 
@@ -29,10 +30,8 @@ impl<'r> FromRequest<'r> for SiteURL {
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let site_url = request.headers().get_one("Host");
         match site_url {
-            Some(site_url) => {
-                Outcome::Success(SiteURL(site_url.to_string()))
-            },
-            None => Outcome::Failure((http::Status::Unauthorized, ApiTokenError::Missing))
+            Some(site_url) => Outcome::Success(SiteURL(site_url.to_string())),
+            None => Outcome::Failure((http::Status::Unauthorized, ApiTokenError::Missing)),
         }
     }
 }
@@ -52,10 +51,12 @@ impl<'r> FromRequest<'r> for Authenticated {
 
         let basic_auth_password = match auth {
             request::Outcome::Success(ref a) => a.password.as_str(),
-            _ => ""
+            _ => "",
         };
 
-        if (basic_auth_username == auth_secrets.username) & (basic_auth_password == auth_secrets.password) {
+        if (basic_auth_username == auth_secrets.username)
+            & (basic_auth_password == auth_secrets.password)
+        {
             return request::Outcome::Success(Authenticated {});
         } else {
             return request::Outcome::Failure((
@@ -95,7 +96,7 @@ fn hello(_auth: Authenticated) -> &'static str {
 
 #[get("/<id>")]
 async fn retrieve(_auth: Authenticated, id: &str) -> content::Custom<Option<File>> {
-    let split: Vec<&str> = id.split(".").collect();
+    let split: Vec<&str> = id.split('.').collect();
     let id: &str = split[0];
     let content_type: ContentType;
 
@@ -107,23 +108,32 @@ async fn retrieve(_auth: Authenticated, id: &str) -> content::Custom<Option<File
         content_type = match ext {
             "PNG" => ContentType::PNG,
             "JPG" | "JPEG" => ContentType::JPEG,
-            _ => ContentType::Any
+            _ => ContentType::Any,
         };
     } else {
         content_type = ContentType::Any;
     }
-    
 
-    let filename = format!("{}/{}", concat!(env!("CARGO_MANIFEST_DIR"), "/", "upload"), id);
+    let filename = format!(
+        "{}/{}",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/", "upload"),
+        id
+    );
     content::Custom(content_type, File::open(&filename).await.ok())
 }
 
-
 #[post("/upload", data = "<paste>")]
-async fn upload(_auth: Authenticated, paste: Data<'_>, site_url: SiteURL) -> std::io::Result<String> {
+async fn upload(
+    _auth: Authenticated,
+    paste: Data<'_>,
+    site_url: SiteURL,
+) -> std::io::Result<String> {
     let id = PasteId::new(8);
     let mb_limit: i16 = 512;
-    paste.open(mb_limit.mebibytes()).into_file(id.file_path()).await?;
+    paste
+        .open(mb_limit.mebibytes())
+        .into_file(id.file_path())
+        .await?;
 
     Ok(format!("{}/{}\n", site_url.0, id.get_paste_id()))
 }
@@ -132,18 +142,16 @@ async fn upload(_auth: Authenticated, paste: Data<'_>, site_url: SiteURL) -> std
 fn rocket() -> _ {
     let username = match env::var("LITEBIN_USERNAME") {
         Ok(v) => v,
-        Err(_e) => "hello".to_string()
+        Err(_e) => "hello".to_string(),
     };
 
     let password = match env::var("LITEBIN_PASSWORD") {
         Ok(v) => v,
-        Err(_e) => "world".to_string()
+        Err(_e) => "world".to_string(),
     };
 
-    let rocket = rocket::build()
+    rocket::build()
         .mount("/", routes![hello, index, upload, retrieve])
         .register("/", catchers![unauthorized_catcher,])
-        .manage(BasicAuth {username: username, password: password});
-
-    rocket
+        .manage(BasicAuth { username, password })
 }
