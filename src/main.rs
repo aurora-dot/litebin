@@ -98,7 +98,7 @@ fn hello(_auth: Authenticated) -> &'static str {
 async fn retrieve(_auth: Authenticated, id: &str) -> content::Custom<Option<File>> {
     let split: Vec<&str> = id.split('.').collect();
     let id: &str = split[0];
-    
+
     let content_type = if split.len() > 1 {
         let ext_string = split[1].to_string();
         let ext_upper = ext_string.to_uppercase();
