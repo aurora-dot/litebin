@@ -93,7 +93,7 @@ fn index() -> &'static str {
 }
 
 #[get("/test_auth")]
-fn hello(_auth: Authenticated) -> &'static str {
+fn test_auth(_auth: Authenticated) -> &'static str {
     "Test Authentication."
 }
 
@@ -153,7 +153,7 @@ fn rocket() -> _ {
     };
 
     rocket::build()
-        .mount("/", routes![hello, index, upload, retrieve])
+        .mount("/", routes![test_auth, index, upload, retrieve])
         .register("/", catchers![unauthorized_catcher,])
         .manage(BasicAuth { username, password })
 }
