@@ -2,7 +2,6 @@ use super::rocket;
 use base64::encode;
 use rocket::http::{Header, Status};
 use rocket::local::blocking::Client;
-use rocket::response;
 extern crate base64;
 
 #[test]
@@ -29,13 +28,15 @@ fn test_auth() {
 }
 
 #[test]
-fn test_upload() {
+fn test_upload_and_retrieve() {
     let body_content = "hello world";
+    let host = "test";
+
     let client = Client::tracked(rocket()).expect("valid rocket instance");
     let authorisation = format!("Basic {}", encode("hello:world"));
     let request = client
         .post(uri!(super::upload))
-        .header(Header::new("Host", "test"))
+        .header(Header::new("Host", host))
         .body(body_content)
         .header(Header::new("Authorization", authorisation.clone()));
 
@@ -45,12 +46,11 @@ fn test_upload() {
     let mut returned_url = response.into_string().unwrap();
     returned_url.pop();
     let url_split: Vec<&str> = returned_url.as_str().split('/').collect();
-    let url_end: &str = url_split[1];
 
-    println!("{}", url_end);
+    assert_eq!(url_split[0], host);
 
     let final_response = client
-        .get(format!("/{}", url_end))
+        .get(format!("/{}", url_split[1]))
         .header(Header::new("Authorization", authorisation))
         .dispatch();
     assert_eq!(final_response.into_string().unwrap(), body_content);
