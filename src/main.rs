@@ -31,6 +31,8 @@ enum ApiTokenError {
     Missing,
 }
 
+const BLACKLISTED_EXTENSIONS: [&str; 3] = ["html", "css", "js"];
+
 // Request guard to get Host from headers
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for SiteURL {
@@ -124,7 +126,7 @@ async fn upload(
     let mb_limit: i16 = 512;
     let raw_bytes = paste.open(mb_limit.mebibytes()).into_bytes().await?;
 
-    let kind = match get_magic_bytes_extension(&raw_bytes) {
+    let mut kind = match get_magic_bytes_extension(&raw_bytes) {
         Ok(Some(info)) => info.extension().to_string(),
         Ok(None) => "txt".to_string(),
         Err(_) => "error".to_string(),
@@ -133,6 +135,10 @@ async fn upload(
     if kind == *"error" {
         Ok("file type error\n".to_string())
     } else {
+        if BLACKLISTED_EXTENSIONS.contains(&kind.as_str()) {
+            kind = "txt".to_string();
+        }
+
         let id = PasteId::new(16, kind);
         let mut file = File::create(id.file_path()).await?;
         file.write_all(&raw_bytes).await?;
