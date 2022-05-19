@@ -17,14 +17,15 @@ impl PasteId<'_> {
     /// the characters used are from the sets [0-9], [A-Z], [a-z]. The
     /// probability of a collision depends on the value of `size` and the number
     /// of IDs generated thus far.
-    pub fn new(size: usize) -> PasteId<'static> {
+    pub fn new(size: usize, extension: String) -> PasteId<'static> {
         let mut id = String::with_capacity(size);
         let mut rng = rand::thread_rng();
         for _ in 0..size {
             id.push(BASE62[rng.gen::<usize>() % 62] as char);
         }
 
-        PasteId(Cow::Owned(id))
+        let full = format!("{}.{}", id, extension);
+        PasteId(Cow::Owned(full))
     }
 
     pub fn file_path(&self) -> PathBuf {

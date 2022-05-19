@@ -1,4 +1,3 @@
-use super::paste_id;
 use super::rocket;
 use base64::encode;
 use rocket::http::ContentType;
@@ -59,39 +58,15 @@ fn test_upload_and_retrieve() {
     // Get uploaded content
     let response = client
         .get(format!("/{}", url_split[1]))
-        .header(Header::new("Authorization", authorisation.clone()))
-        .dispatch();
-
-    assert_eq!(
-        response.headers().iter().next(),
-        Some(ContentType::Any.into())
-    );
-    assert_eq!(response.status().clone(), Status::Ok);
-    assert_eq!(response.into_string().unwrap(), body_content);
-
-    // Get uploaded content as PNG
-    let response = client
-        .get(format!("/{}.png", url_split[1]))
-        .header(Header::new("Authorization", authorisation.clone()))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Ok);
-    assert_eq!(
-        response.headers().iter().next(),
-        Some(ContentType::PNG.into())
-    );
-
-    // Get uploaded content as JPG
-    let response = client
-        .get(format!("/{}.jpg", url_split[1]))
         .header(Header::new("Authorization", authorisation))
         .dispatch();
 
-    assert_eq!(response.status(), Status::Ok);
     assert_eq!(
         response.headers().iter().next(),
-        Some(ContentType::JPEG.into())
+        Some(ContentType::Plain.into())
     );
+    assert_eq!(response.status().clone(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), body_content);
 }
 
 #[test]
