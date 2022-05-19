@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
+#[cfg(test)]
+mod tests;
+
 mod paste_id;
 
 use std::env;
@@ -24,6 +27,7 @@ enum ApiTokenError {
     Missing,
 }
 
+// Request guard to get Host from headers
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for SiteURL {
     type Error = ApiTokenError;
@@ -31,11 +35,12 @@ impl<'r> FromRequest<'r> for SiteURL {
         let site_url = request.headers().get_one("Host");
         match site_url {
             Some(site_url) => Outcome::Success(SiteURL(site_url.to_string())),
-            None => Outcome::Failure((http::Status::Unauthorized, ApiTokenError::Missing)),
+            None => Outcome::Failure((http::Status::BadRequest, ApiTokenError::Missing)),
         }
     }
 }
 
+// Request guard for basic auth check
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for Authenticated {
     type Error = &'static str;
@@ -67,6 +72,7 @@ impl<'r> FromRequest<'r> for Authenticated {
     }
 }
 
+// Catches 401s and responds with a request to the client for basic auth login
 #[catch(401)]
 fn unauthorized_catcher<'r, 'o: 'r>() -> impl Responder<'r, 'o> {
     struct Resp {}
@@ -90,7 +96,7 @@ fn index() -> &'static str {
 }
 
 #[get("/test_auth")]
-fn hello(_auth: Authenticated) -> &'static str {
+fn test_auth(_auth: Authenticated) -> &'static str {
     "Test Authentication."
 }
 
@@ -150,7 +156,7 @@ fn rocket() -> _ {
     };
 
     rocket::build()
-        .mount("/", routes![hello, index, upload, retrieve])
+        .mount("/", routes![test_auth, index, upload, retrieve])
         .register("/", catchers![unauthorized_catcher,])
         .manage(BasicAuth { username, password })
 }
