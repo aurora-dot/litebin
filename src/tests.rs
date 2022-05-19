@@ -4,7 +4,6 @@ use base64::encode;
 use rocket::http::ContentType;
 use rocket::http::{Header, Status};
 use rocket::local::blocking::Client;
-use rocket::response;
 extern crate base64;
 
 #[test]
@@ -18,8 +17,12 @@ fn test_index() {
 #[test]
 fn test_auth() {
     let client = Client::tracked(rocket()).expect("valid rocket instance");
+
+    // Send unauthorised request
     let init_response = client.get(uri!(super::test_auth)).dispatch();
     assert_eq!(init_response.status(), Status::Unauthorized);
+
+    // Send authorised request
     let default_credentials_base64 = encode("hello:world");
     let authorisation = format!("Basic {}", default_credentials_base64);
     let response = client
@@ -35,23 +38,25 @@ fn test_upload_and_retrieve() {
     let body_content = "hello world";
     let host = "test";
 
+    // Send authorised request with text body content
     let client = Client::tracked(rocket()).expect("valid rocket instance");
     let authorisation = format!("Basic {}", encode("hello:world"));
-    let request = client
+    let response = client
         .post(uri!(super::upload))
         .header(Header::new("Host", host))
         .body(body_content)
-        .header(Header::new("Authorization", authorisation.clone()));
+        .header(Header::new("Authorization", authorisation.clone()))
+        .dispatch();
 
-    let response = request.dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    // Get returned end of url and host
     let mut returned_url = response.into_string().unwrap();
     returned_url.pop();
     let url_split: Vec<&str> = returned_url.as_str().split('/').collect();
-
     assert_eq!(url_split[0], host);
 
+    // Get uploaded content
     let response = client
         .get(format!("/{}", url_split[1]))
         .header(Header::new("Authorization", authorisation.clone()))
@@ -64,6 +69,7 @@ fn test_upload_and_retrieve() {
     assert_eq!(response.status().clone(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), body_content);
 
+    // Get uploaded content as PNG
     let response = client
         .get(format!("/{}.png", url_split[1]))
         .header(Header::new("Authorization", authorisation.clone()))
@@ -75,9 +81,10 @@ fn test_upload_and_retrieve() {
         Some(ContentType::PNG.into())
     );
 
+    // Get uploaded content as JPG
     let response = client
         .get(format!("/{}.jpg", url_split[1]))
-        .header(Header::new("Authorization", authorisation.clone()))
+        .header(Header::new("Authorization", authorisation))
         .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
@@ -91,6 +98,7 @@ fn test_upload_and_retrieve() {
 fn test_unauthorised() {
     let client = Client::tracked(rocket()).expect("valid rocket instance");
 
+    // No SiteURL / Host header
     let response = client
         .post(uri!(super::upload))
         .body("hello world")
@@ -100,7 +108,7 @@ fn test_unauthorised() {
         ))
         .dispatch();
 
-    assert_eq!(response.status(), Status::Unauthorized);
+    assert_eq!(response.status(), Status::BadRequest);
 
     let mut custom_headers = response.headers().iter();
     assert_eq!(
@@ -108,11 +116,12 @@ fn test_unauthorised() {
         Some(Header::new("WWW-Authenticate", "Basic"))
     );
 
+    // Incorrect username and password
     let response = client
         .get(uri!(super::test_auth))
         .header(Header::new(
             "Authorization",
-            format!("Basic {}", encode("hello:hello")),
+            format!("Basic {}", encode("test:test")),
         ))
         .dispatch();
 
