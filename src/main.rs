@@ -111,6 +111,9 @@ async fn retrieve(id: PathBuf, _auth: Authenticated) -> Result<NamedFile, NotFou
         .await
         .map_err(|e| NotFound(e.to_string()))
 }
+pub fn get_magic_bytes_extension(bytes: &[u8]) -> Result<Option<infer::Type>, &'static str> {
+    Ok(infer::get(bytes))
+}
 
 #[post("/upload", data = "<paste>")]
 async fn upload(
@@ -120,13 +123,22 @@ async fn upload(
 ) -> std::io::Result<String> {
     let mb_limit: i16 = 512;
     let raw_bytes = paste.open(mb_limit.mebibytes()).into_bytes().await?;
-    let kind = infer::get(&raw_bytes).expect("file type is known");
 
-    let id = PasteId::new(16, kind.extension().to_string());
-    let mut file = File::create(id.file_path()).await?;
-    file.write_all(&raw_bytes).await?;
+    let kind = match get_magic_bytes_extension(&raw_bytes) {
+        Ok(Some(info)) => info.extension().to_string(),
+        Ok(None) => "txt".to_string(),
+        Err(_) => "error".to_string(),
+    };
 
-    Ok(format!("{}/{}\n", site_url.0, id.get_paste_id()))
+    if kind == *"error" {
+        Ok("file type error\n".to_string())
+    } else {
+        let id = PasteId::new(16, kind);
+        let mut file = File::create(id.file_path()).await?;
+        file.write_all(&raw_bytes).await?;
+
+        Ok(format!("{}/{}\n", site_url.0, id.get_paste_id()))
+    }
 }
 
 #[launch]
