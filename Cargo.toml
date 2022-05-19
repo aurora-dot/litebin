@@ -10,7 +10,11 @@ edition = "2021"
 exclude = ["dockerfile", ".dockerignore"]
 
 [dependencies]
-rocket = "0.5.0-rc.1"
+rocket = "0.5.0-rc.2"
 rocket-basicauth = "2"
 rand = "0.8"
+infer = "0.8.0"
+tokio = "1.6.1"
+
+[dev-dependencies]
 base64 = "0.13.0"

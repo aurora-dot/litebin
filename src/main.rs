@@ -7,15 +7,19 @@ mod tests;
 mod paste_id;
 
 use std::env;
+use std::path::{Path, PathBuf};
 
 use paste_id::PasteId;
 
 use rocket::data::{Data, ToByteUnit};
+use rocket::fs::NamedFile;
 use rocket::http::{self, ContentType, Header};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::response::content;
+use rocket::response::status::NotFound;
 use rocket::response::{Responder, Response};
 use rocket::tokio::fs::File;
+use rocket::tokio::io::AsyncWriteExt;
 use rocket_basicauth::BasicAuth;
 
 struct Authenticated {}
@@ -100,45 +104,27 @@ fn test_auth(_auth: Authenticated) -> &'static str {
     "Test Authentication."
 }
 
-#[get("/<id>")]
-async fn retrieve(_auth: Authenticated, id: &str) -> content::Custom<Option<File>> {
-    let split: Vec<&str> = id.split('.').collect();
-    let id: &str = split[0];
-
-    let content_type = if split.len() > 1 {
-        let ext_string = split[1].to_string();
-        let ext_upper = ext_string.to_uppercase();
-        let ext: &str = ext_upper.as_str();
-
-        match ext {
-            "PNG" => ContentType::PNG,
-            "JPG" | "JPEG" => ContentType::JPEG,
-            _ => ContentType::Any,
-        }
-    } else {
-        ContentType::Any
-    };
-
-    let filename = format!(
-        "{}/{}",
-        concat!(env!("CARGO_MANIFEST_DIR"), "/", "upload"),
-        id
-    );
-    content::Custom(content_type, File::open(&filename).await.ok())
+#[get("/<id..>")]
+async fn retrieve(id: PathBuf, _auth: Authenticated) -> Result<NamedFile, NotFound<String>> {
+    let path = Path::new("upload/").join(id);
+    NamedFile::open(&path)
+        .await
+        .map_err(|e| NotFound(e.to_string()))
 }
 
 #[post("/upload", data = "<paste>")]
 async fn upload(
     _auth: Authenticated,
-    paste: Data<'_>,
     site_url: SiteURL,
+    paste: Data<'_>,
 ) -> std::io::Result<String> {
-    let id = PasteId::new(8);
     let mb_limit: i16 = 512;
-    paste
-        .open(mb_limit.mebibytes())
-        .into_file(id.file_path())
-        .await?;
+    let raw_bytes = paste.open(mb_limit.mebibytes()).into_bytes().await?;
+    let kind = infer::get(&raw_bytes).expect("file type is known");
+
+    let id = PasteId::new(16, kind.extension().to_string());
+    let mut file = File::create(id.file_path()).await?;
+    file.write_all(&raw_bytes).await?;
 
     Ok(format!("{}/{}\n", site_url.0, id.get_paste_id()))
 }
