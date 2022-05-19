@@ -1,4 +1,3 @@
-
 use super::rocket;
 use base64::encode;
 use rocket::http::ContentType;
