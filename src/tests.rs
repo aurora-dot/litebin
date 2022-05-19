@@ -110,12 +110,6 @@ fn test_unauthorised() {
 
     assert_eq!(response.status(), Status::BadRequest);
 
-    let mut custom_headers = response.headers().iter();
-    assert_eq!(
-        custom_headers.next(),
-        Some(Header::new("WWW-Authenticate", "Basic"))
-    );
-
     // Incorrect username and password
     let response = client
         .get(uri!(super::test_auth))
