@@ -13,9 +13,9 @@ use paste_id::PasteId;
 
 use rocket::data::{Data, ToByteUnit};
 use rocket::fs::NamedFile;
-use rocket::http::{self, ContentType, Header};
+use rocket::http::{self, Header};
 use rocket::request::{self, FromRequest, Outcome, Request};
-use rocket::response::content;
+
 use rocket::response::status::NotFound;
 use rocket::response::{Responder, Response};
 use rocket::tokio::fs::File;

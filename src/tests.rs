@@ -1,4 +1,4 @@
-use super::paste_id;
+
 use super::rocket;
 use base64::encode;
 use rocket::http::ContentType;
@@ -59,7 +59,7 @@ fn test_upload_and_retrieve() {
     // Get uploaded content
     let response = client
         .get(format!("/{}", url_split[1]))
-        .header(Header::new("Authorization", authorisation.clone()))
+        .header(Header::new("Authorization", authorisation))
         .dispatch();
 
     assert_eq!(
